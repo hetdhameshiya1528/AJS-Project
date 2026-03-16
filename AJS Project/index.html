@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html ng-app="animeApp">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Explorer - Ultimate SPA</title>
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-route.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-animate.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #0f172a; --nav-bg: #1e293b; --card-bg: #1e293b;
+            --text-main: #f8fafc; --text-muted: #94a3b8;
+            --primary: #6366f1; --primary-hover: #4f46e5; --accent: #ec4899;
+            --success: #10b981; --danger: #ef4444;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 0; 
+            background-color: var(--bg-color); color: var(--text-main);
+            display: flex; flex-direction: column; min-height: 100vh;
+        }
+
+        /* Navigation */
+        nav { 
+            background: var(--nav-bg); padding: 15px 30px; display: flex; 
+            justify-content: space-between; align-items: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5);
+            position: sticky; top: 0; z-index: 100; flex-wrap: wrap; gap: 10px;
+        }
+        nav h1 { margin: 0; font-size: 24px; color: var(--primary); }
+        nav h1 span { color: var(--accent); }
+        nav ul { list-style: none; padding: 0; display: flex; gap: 15px; flex-wrap: wrap; margin: 0;}
+        nav a { color: var(--text-main); text-decoration: none; font-weight: 600; font-size: 14px;}
+        nav a:hover { color: var(--accent); }
+
+        .container { padding: 30px; max-width: 1200px; margin: auto; flex: 1; width: 100%; box-sizing: border-box; }
+        h2 { border-left: 4px solid var(--primary); padding-left: 10px; margin-bottom: 20px;}
+
+        /* Animations (Practical XXIX) */
+        .view-animate.ng-enter, .view-animate.ng-leave { transition: all 0.3s ease-in-out; }
+        .view-animate.ng-enter { opacity: 0; transform: translateX(-20px); }
+        .view-animate.ng-enter.ng-enter-active { opacity: 1; transform: translateX(0); }
+        .view-animate.ng-leave { opacity: 1; }
+        .view-animate.ng-leave.ng-leave-active { opacity: 0; }
+
+        /* Grids & Cards */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; }
+        .card { background: var(--card-bg); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.3);}
+        .card:hover { transform: translateY(-5px); }
+        .card img { width: 100%; height: 300px; object-fit: cover; }
+        .card-content { padding: 15px; flex: 1; display: flex; flex-direction: column; }
+        .card-content h4 { margin: 0 0 10px 0; }
+        .btn { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; text-decoration: none; text-align: center; display: inline-block; margin-top: auto;}
+        
+        /* Lists and Tables */
+        .list-item { padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
+        .even-row { background-color: #1e293b; border-left: 3px solid var(--primary); }
+        .odd-row { background-color: #0f172a; border-left: 3px solid var(--accent); }
+
+        /* Forms & Validation Classes (Practical XXIII) */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 14px;}
+        input, textarea, select { 
+            padding: 12px; width: 100%; max-width: 500px; border-radius: 6px; 
+            border: 2px solid #334155; background: var(--bg-color); color: white; box-sizing: border-box;
+        }
+        
+        /* Angular CSS Validation States */
+        input.ng-invalid.ng-touched, textarea.ng-invalid.ng-touched { border-color: var(--danger); }
+        input.ng-valid.ng-touched, textarea.ng-valid.ng-touched { border-color: var(--success); }
+        .error-msg { color: var(--danger); font-size: 12px; display: block; margin-top: 5px;}
+        
+        /* Fixed JSON display box */
+        .debug-box { background: #000; padding: 15px; font-family: monospace; color: #0f0; border-radius: 5px; white-space: pre-wrap; overflow-x: auto; font-size: 13px; }
+        
+        footer { background: var(--nav-bg); padding: 20px; text-align: center; margin-top: auto; color: var(--text-muted); font-size: 14px;}
+    </style>
+</head>
+<body ng-controller="ParentController">
+
+    <nav>
+        <h1>Anime<span>Explorer</span></h1>
+        <ul>
+            <li><a href="#/!">Home</a></li>
+            <li><a href="#!/categories">Categories</a></li>
+            <li><a href="#!/subbed">Subbed</a></li>
+            <li><a href="#!/dubbed">Dubbed</a></li>
+            <li><a href="#!/movies">Movies</a></li>
+            <li><a href="#!/reviews">Reviews</a></li>
+            <li><a href="#!/contact">Contact Us</a></li>
+        </ul>
+        <div style="font-size: 13px; color: var(--accent);">
+            User: <strong>{{ userProfile.name }}</strong>
+        </div>
+    </nav>
+
+    <div class="container view-animate" ng-view></div>
+
+    <footer class="custom-footer-dir" current-time-dir></footer>
+
+    <script type="text/ng-template" id="home.html">
+        <h2>Top Airing Anime</h2>
+        <div style="margin-bottom: 20px;">
+            <input type="text" ng-model="searchQuery" placeholder="Search anime..." style="width:300px; display:inline-block;">
+            <span style="margin-left: 10px; color:var(--text-muted);">Results for: <strong ng-bind="searchQuery"></strong></span>
+        </div>
+
+        <p ng-if="isLoading" style="color:var(--accent);">Loading from Jikan API...</p>
+
+        <div class="grid" ng-show="!isLoading">
+            <div class="card" ng-repeat="anime in animeList | filter:searchQuery | orderBy:'-score'">
+                <img ng-src="{{ anime.images.jpg.image_url }}" alt="{{ anime.title }}">
+                <div class="card-content">
+                    <h4>{{ anime.title | uppercase }}</h4>
+                    <p style="color: gold; margin: 0 0 10px 0;">★ {{ anime.score || 'N/A' }}</p>
+                    <a href="#!/anime/{{ anime.mal_id }}" class="btn">View JSON Details</a>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/ng-template" id="details.html">
+        <h2>Details (ID: {{ animeId }})</h2>
+        <a href="#/!" style="color:var(--primary); text-decoration:none;">← Back to Home</a>
+        <div style="margin-top: 20px; background: var(--nav-bg); padding: 20px; border-radius: 10px;">
+            <p ng-if="isLoading">Fetching details...</p>
+            <div ng-if="!isLoading">
+                <h3>{{ animeDetails.title }}</h3>
+                <img ng-src="{{ animeDetails.images.jpg.image_url }}" width="200" style="border-radius: 8px;">
+                <p>{{ animeDetails.synopsis }}</p>
+                <h4>Raw API Response (JSON Filter Demo):</h4>
+                <pre class="debug-box">{{ animeDetails | json }}</pre>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/ng-template" id="categories.html">
+        <h2>Browse Categories</h2>
+        <div class="grid">
+            <div class="card" ng-repeat="cat in categories">
+                <img ng-src="{{ cat.image }}" alt="{{ cat.name }}" style="height: 150px;">
+                <div class="card-content" style="text-align:center;">
+                    <h4>{{ cat.name }}</h4>
+                    <p style="font-size:12px; color:var(--accent);">{{ cat.status | makeAwesome }}</p>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/ng-template" id="subbed.html">
+        <h2>Trending Subbed Anime</h2>
+        <p style="color: var(--text-muted);">Original Japanese audio. Demonstrating ng-repeat with $even and $odd.</p>
+        
+        <div>
+            <div ng-repeat="anime in subbedList" class="list-item" ng-class="{'even-row': $even, 'odd-row': $odd}">
+                <div>
+                    <h3 style="margin: 0 0 5px 0;">{{ $index + 1 }}. {{ anime.title }}</h3>
+                    <small style="color: var(--text-muted);">Episodes: {{ anime.episodes }}</small>
+                </div>
+                <button class="btn" style="width:auto;">Watch Subbed</button>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/ng-template" id="dubbed.html">
+        <h2>Popular Dubbed Anime</h2>
+        <div class="grid">
+            <div class="card" ng-repeat="anime in dubbedList">
+                <img ng-src="{{ anime.image }}" alt="{{ anime.title }}">
+                <div class="card-content">
+                    <h4>{{ anime.title }}</h4>
+                    <p style="color:var(--text-muted); font-size:13px;">Studio: {{ anime.studio }}</p>
+                    <button class="btn">Watch Dubbed</button>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/ng-template" id="movies.html">
+        <h2>Anime Movies Box Office</h2>
+        <p ng-if="isLoading">Loading theatrical releases...</p>
+        <div class="grid" ng-if="!isLoading">
+            <div class="card" ng-repeat="movie in movieList">
+                <div class="card-content">
+                    <h4>{{ movie.title }}</h4>
+                    <p style="margin:5px 0; font-size:13px;">Released: <span style="color:var(--primary);">{{ movie.release | date:'longDate' }}</span></p>
+                    <p style="margin:5px 0; font-size:13px;">Tickets Sold: <span style="color:var(--success);">{{ movie.tickets | number }}</span></p>
+                    <p style="margin:5px 0; font-size:13px;">Gross Rev: <span style="color:gold;">{{ movie.revenue | currency:"$" }}</span></p>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/ng-template" id="reviews.html">
+        <h2>Community Reviews (Playground)</h2>
+        
+        <div style="background:var(--card-bg); padding:20px; border-radius:8px; margin-bottom:20px;">
+            <h3>Write a Review (Event Bindings)</h3>
+            <p style="font-size:13px; color:var(--text-muted);">Try typing, copying, or pasting in the box below.</p>
+            
+            <textarea rows="4" ng-model="reviewText" 
+                      ng-copy="logEvent('You copied text!')" 
+                      ng-paste="logEvent('You pasted text!')" 
+                      ng-keyup="logEvent('Typing...')"></textarea>
+            
+            <p style="color:var(--accent); font-size:13px; font-weight:bold;">Event Tracker: {{ lastEvent }}</p>
+            
+            <p>Character Count: <strong ng-style="{'color': charColor}">{{ charCount }}/100</strong></p>
+            
+            <button onclick="simulateExternalSave()" style="background:#475569; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;">
+                Simulate External System Save (Uses $apply)
+            </button>
+            <p style="color:var(--success); margin-top:10px;">{{ externalSaveMessage }}</p>
+        </div>
+    </script>
+
+    <script type="text/ng-template" id="contact.html">
+        <h2>Contact Us</h2>
+        <div style="background:var(--card-bg); padding:30px; border-radius:12px; max-width:600px;">
+            
+            <form name="contactForm" ng-submit="submitForm()" novalidate>
+                
+                <div class="form-group">
+                    <label>Your Name (Required, Min 3 chars)</label>
+                    <input type="text" name="uName" ng-model="contact.name" ng-minlength="3" required>
+                    <span class="error-msg" ng-show="contactForm.uName.$dirty && contactForm.uName.$error.required">Name is required.</span>
+                    <span class="error-msg" ng-show="contactForm.uName.$error.minlength">Must be at least 3 characters.</span>
+                </div>
+
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" name="uEmail" ng-model="contact.email" required>
+                    <span class="error-msg" ng-show="contactForm.uEmail.$touched && contactForm.uEmail.$invalid">Enter a valid email address.</span>
+                </div>
+
+                <div class="form-group">
+                    <label>Promo Code (Must type exactly: 'ANIME' - Custom Validator)</label>
+                    <input type="text" name="uCode" ng-model="contact.code" custom-match required>
+                    <span class="error-msg" ng-show="contactForm.uCode.$dirty && contactForm.uCode.$error.customMatch">Invalid promo code.</span>
+                </div>
+
+                <button type="submit" class="btn" ng-disabled="contactForm.$invalid" ng-style="contactForm.$invalid ? {'opacity':0.5, 'cursor':'not-allowed'} : {}" style="width:100%;">Send Message</button>
+            </form>
+
+            <div style="margin-top: 20px; font-size: 12px; background:#0f172a; padding:10px; border-radius:5px;">
+                <p style="margin:0 0 5px 0; color:var(--text-muted);"><strong>Form Internal States:</strong></p>
+                <span style="color: {{ contactForm.$valid ? '#10b981' : '#ef4444' }}">Valid: {{ contactForm.$valid }}</span> | 
+                <span>Pristine: {{ contactForm.$pristine }}</span> | 
+                <span>Dirty: {{ contactForm.$dirty }}</span>
+            </div>
+            
+            <p ng-if="successMsg" style="color: var(--success); margin-top: 15px; font-weight:bold;">{{ successMsg }}</p>
+        </div>
+    </script>
+
+    <script>
+        var app = angular.module('animeApp', ['ngRoute', 'ngAnimate']);
+
+        // --- Routing Configuration ---
+        app.config(function($routeProvider) {
+            $routeProvider
+            .when("/", { templateUrl : "home.html", controller : "HomeController" })
+            .when("/anime/:id", { templateUrl : "details.html", controller : "DetailsController" })
+            .when("/categories", { templateUrl : "categories.html", controller : "CategoryController" })
+            .when("/subbed", { templateUrl : "subbed.html", controller : "SubbedController" })
+            .when("/dubbed", { templateUrl : "dubbed.html", controller : "DubbedController" })
+            .when("/movies", { templateUrl : "movies.html", controller : "MovieController" })
+            .when("/reviews", { templateUrl : "reviews.html", controller : "ReviewController" })
+            .when("/contact", { templateUrl : "contact.html", controller : "ContactController" })
+            .otherwise({ redirectTo: "/" });
+        });
+
+        // --- Custom Filter (Practical XX) ---
+        app.filter('makeAwesome', function() {
+            return function(input) {
+                if(!input) return "";
+                return "🔥 " + input.toUpperCase() + " SELECTION";
+            };
+        });
+
+        // --- Custom Directives (Practical XII, XXIV) ---
+        app.directive('currentTimeDir', function($interval, dateFilter) {
+            return {
+                restrict: 'EAC',
+                template: '<div>AngularJS SPA | Current Time: {{ timeString }}</div>',
+                link: function(scope, element, attrs) {
+                    scope.timeString = dateFilter(new Date(), 'mediumTime');
+                    var stopTime = $interval(function() { scope.timeString = dateFilter(new Date(), 'mediumTime'); }, 1000);
+                    element.on('$destroy', function() { $interval.cancel(stopTime); });
+                }
+            };
+        });
+
+        app.directive('customMatch', function() {
+            return {
+                require: 'ngModel',
+                link: function(scope, element, attr, mCtrl) {
+                    mCtrl.$parsers.push(function(value) {
+                        mCtrl.$setValidity('customMatch', value === "ANIME");
+                        return value;
+                    });
+                }
+            };
+        });
+
+        // --- Controllers ---
+
+        app.controller('ParentController', function($scope) {
+            $scope.userProfile = { name: "Guest Explorer" };
+        });
+
+        app.controller('HomeController', function($scope, $http) {
+            $scope.isLoading = true;
+            $scope.animeList = [];
+            $http.get('https://api.jikan.moe/v4/top/anime?limit=8').then(function(response) {
+                $scope.animeList = response.data.data;
+                $scope.isLoading = false;
+            });
+        });
+
+        app.controller('DetailsController', function($scope, $routeParams, $http) {
+            $scope.animeId = $routeParams.id;
+            $scope.isLoading = true;
+            $http.get('https://api.jikan.moe/v4/anime/' + $scope.animeId).then(function(response) {
+                $scope.animeDetails = response.data.data;
+                $scope.isLoading = false;
+            });
+        });
+
+        app.controller('CategoryController', function($scope) {
+            $scope.categories = [
+                { name: "Shounen Action", status: "popular", image: "https://images.unsplash.com/photo-1614583224978-f05ce51ef5fa?w=400&q=80" },
+                { name: "Slice of Life", status: "relaxing", image: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=400&q=80" },
+                { name: "Dark Fantasy", status: "trending", image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&q=80" }
+            ];
+        });
+
+        app.controller('SubbedController', function($scope) {
+            $scope.subbedList = [
+                { title: "Solo Leveling", episodes: 12 },
+                { title: "One Piece", episodes: "1000+" },
+                { title: "Jujutsu Kaisen", episodes: 47 },
+                { title: "Demon Slayer", episodes: 55 },
+                { title: "Attack on Titan", episodes: 89 }
+            ];
+        });
+
+        app.controller('DubbedController', function($scope) {
+            $scope.dubbedList = [
+                { title: "Cowboy Bebop", studio: "Sunrise", image: "https://cdn.myanimelist.net/images/anime/4/19644.jpg" },
+                { title: "Fullmetal Alchemist: Bro", studio: "Bones", image: "https://cdn.myanimelist.net/images/anime/1208/94745.jpg" },
+                { title: "Death Note", studio: "Madhouse", image: "https://cdn.myanimelist.net/images/anime/1079/138100.jpg" }
+            ];
+        });
+
+        app.controller('MovieController', function($scope) {
+            $scope.isLoading = false;
+            // Static data to demonstrate date, number, and currency filters perfectly
+            $scope.movieList = [
+                { title: "Demon Slayer: Mugen Train", release: new Date("2020-10-16"), tickets: 41000000, revenue: 507000000 },
+                { title: "Spirited Away", release: new Date("2001-07-20"), tickets: 23000000, revenue: 395000000 },
+                { title: "Your Name", release: new Date("2016-08-26"), tickets: 19000000, revenue: 382000000 }
+            ];
+        });
+
+        app.controller('ReviewController', function($scope) {
+            $scope.reviewText = "";
+            $scope.lastEvent = "Waiting for action...";
+            $scope.charCount = 0;
+            $scope.charColor = "white";
+            $scope.externalSaveMessage = "";
+
+            $scope.logEvent = function(msg) { $scope.lastEvent = msg; };
+
+            // Practical XXV: $watch
+            $scope.$watch('reviewText', function(newVal) {
+                if(newVal) {
+                    $scope.charCount = newVal.length;
+                    $scope.charColor = newVal.length > 80 ? "#ef4444" : "#10b981";
+                } else {
+                    $scope.charCount = 0;
+                }
+            });
+
+            // Practical XXV: $apply for outside events
+            window.simulateExternalSave = function() {
+                $scope.$apply(function() {
+                    $scope.externalSaveMessage = "External System Saved Review at: " + new Date().toLocaleTimeString();
+                });
+            };
+        });
+
+        app.controller('ContactController', function($scope) {
+            $scope.contact = {};
+            $scope.successMsg = "";
+            
+            $scope.submitForm = function() {
+                $scope.successMsg = "Thank you, " + $scope.contact.name + "! Message received.";
+                $scope.contact = {}; // Clear model
+                $scope.contactForm.$setPristine(); // Reset state
+                $scope.contactForm.$setUntouched();
+            };
+        });
+    </script>
+</body>
+</html>
